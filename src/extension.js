@@ -2,6 +2,7 @@
 // VS Code glue: runs the engine on open and edited documents and shows the issues as diagnostics.
 const vscode = require('vscode');
 const { analyze, LANGUAGES } = require('./engine');
+require('./rules');                       // loads every rule set
 
 const SEVERITY = {
   error: vscode.DiagnosticSeverity.Error,

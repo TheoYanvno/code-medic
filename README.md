@@ -2,7 +2,7 @@
 
 A VS Code extension that finds common mistakes in JavaScript, TypeScript and Python as you type, explains each one in plain words, and offers **two** ways to fix it from the Quick Fix menu (the light bulb, or Ctrl+.).
 
-**Status:** in progress. The diagnostics engine is in; rules and Quick Fixes are being added.
+**Status:** in progress. The engine and the JavaScript/TypeScript rules are in; Python rules and Quick Fixes are next.
 
 ## How it works
 
