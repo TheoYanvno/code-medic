@@ -21,14 +21,26 @@ function toDiagnostic(issue) {
   return d;
 }
 
+/** Reads the user's Code Medic settings. */
+function settings() {
+  const cfg = vscode.workspace.getConfiguration('codeMedic');
+  return {
+    enabled: cfg.get('enable', true),
+    disabled: cfg.get('disabledRules', []),
+    severity: cfg.get('severity', {}),
+  };
+}
+
 function activate(context) {
   const collection = vscode.languages.createDiagnosticCollection('code-medic');
   const issuesByDoc = new Map();          // uri -> latest issues, so fixes and hovers can find them
   const timers = new Map();
 
+  let options = settings();
   const check = (doc) => {
     if (!LANGUAGES[doc.languageId]) return;
-    const issues = analyze(doc.getText(), doc.languageId);
+    if (!options.enabled) { collection.delete(doc.uri); issuesByDoc.delete(doc.uri.toString()); return; }
+    const issues = analyze(doc.getText(), doc.languageId, options);
     issuesByDoc.set(doc.uri.toString(), issues);
     collection.set(doc.uri, issues.map(toDiagnostic));
   };
@@ -81,6 +93,11 @@ function activate(context) {
     vscode.workspace.onDidCloseTextDocument((doc) => {
       collection.delete(doc.uri);
       issuesByDoc.delete(doc.uri.toString());
+    }),
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (!e.affectsConfiguration('codeMedic')) return;
+      options = settings();
+      vscode.workspace.textDocuments.forEach(check);   // apply new settings right away
     }),
     vscode.commands.registerCommand('codeMedic.checkFile', () => {
       const editor = vscode.window.activeTextEditor;

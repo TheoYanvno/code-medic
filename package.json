@@ -9,8 +9,17 @@
     "vscode": "^1.85.0",
     "node": ">=18"
   },
-  "categories": ["Linters", "Education"],
-  "keywords": ["linter", "quick fix", "beginner", "javascript", "python"],
+  "categories": [
+    "Linters",
+    "Education"
+  ],
+  "keywords": [
+    "linter",
+    "quick fix",
+    "beginner",
+    "javascript",
+    "python"
+  ],
   "activationEvents": [
     "onLanguage:javascript",
     "onLanguage:javascriptreact",
@@ -21,8 +30,53 @@
   "main": "./src/extension.js",
   "contributes": {
     "commands": [
-      { "command": "codeMedic.checkFile", "title": "Code Medic: Check this file" }
-    ]
+      {
+        "command": "codeMedic.checkFile",
+        "title": "Code Medic: Check this file"
+      }
+    ],
+    "configuration": {
+      "title": "Code Medic",
+      "properties": {
+        "codeMedic.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Check files as you type."
+        },
+        "codeMedic.disabledRules": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string",
+            "enum": [
+              "loose-equality",
+              "no-var",
+              "no-console-log",
+              "no-debugger",
+              "bare-except",
+              "mutable-default",
+              "none-comparison",
+              "leftover-print"
+            ]
+          },
+          "description": "Rules to turn off, for example [\"no-var\"]."
+        },
+        "codeMedic.severity": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string",
+            "enum": [
+              "error",
+              "warning",
+              "info",
+              "off"
+            ]
+          },
+          "description": "Change how a rule shows up, for example { \"loose-equality\": \"error\" }. \"off\" turns it off."
+        }
+      }
+    }
   },
   "scripts": {
     "test": "node --test test/*.test.js"

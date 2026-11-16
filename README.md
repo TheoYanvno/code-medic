@@ -2,7 +2,7 @@
 
 A VS Code extension that finds common mistakes in JavaScript, TypeScript and Python as you type, explains each one in plain words, and offers **two** ways to fix it from the Quick Fix menu (the light bulb, or Ctrl+.).
 
-**Status:** in progress. Rules for JavaScript, TypeScript and Python, two Quick Fixes per issue and hover explanations are in; settings are next.
+**Status:** in progress. Rules for JavaScript, TypeScript and Python, two Quick Fixes per issue and hover explanations and settings are in; TypeScript-only rules are next.
 
 ## How it works
 
@@ -25,6 +25,16 @@ A VS Code extension that finds common mistakes in JavaScript, TypeScript and Pyt
 | `none-comparison` | Python | `is None` / `is not None` | Mark as intended |
 | `leftover-print` | Python | Remove the line | Change to `logging.debug()` (adds the import) |
 
+## Settings
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `codeMedic.enable` | `true` | Check files as you type |
+| `codeMedic.disabledRules` | `[]` | Rules to turn off, e.g. `["no-var"]` |
+| `codeMedic.severity` | `{}` | Change a rule's level: `error`, `warning`, `info` or `off`, e.g. `{ "loose-equality": "error" }` |
+
+Changes apply right away to every open file.
+
 ## Run it
 
 ```bash
@@ -36,7 +46,6 @@ To try the extension, open this folder in VS Code and press F5 (Run Extension).
 ## Planned
 
 - TypeScript rules (`any`, non-null `!`)
-- Settings to turn rules on or off and change their severity
 - A "fix all" command, more rules and a packaged `.vsix`
 
 ## Credits

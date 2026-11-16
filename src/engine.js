@@ -51,9 +51,28 @@ function mask(line, lang, state = { inBlock: false }) {
 /** Lines that end with "code-medic-ignore" (in a comment) are skipped. */
 const IGNORE = /code-medic-ignore/;
 
-function analyze(text, languageId) {
+const LEVELS = ['error', 'warning', 'info'];
+
+/**
+ * Settings, all optional:
+ *   disabled: ['no-var', ...]               rules to skip
+ *   severity: { 'loose-equality': 'error' } per-rule level: error, warning, info, or off
+ */
+function normalizeOptions(options = {}) {
+  const off = new Set(options.disabled || []);
+  const severity = {};
+  for (const [rule, level] of Object.entries(options.severity || {})) {
+    if (level === 'off') off.add(rule);
+    else if (LEVELS.includes(level)) severity[rule] = level;
+  }
+  return { off, severity };
+}
+
+function analyze(text, languageId, options) {
   const lang = LANGUAGES[languageId];
   if (!lang) return [];
+  const { off, severity } = normalizeOptions(options);
+  const active = rules[lang].filter((r) => !off.has(r.id));
   const lines = text.split(/\r?\n/);
   const state = { inBlock: false };
   const masked = lines.map((l) => mask(l, lang, state));
@@ -61,11 +80,22 @@ function analyze(text, languageId) {
   lines.forEach((raw, line) => {
     if (IGNORE.test(raw)) return;
     const ctx = { raw, code: masked[line], line, lines, masked, lang };
-    for (const rule of rules[lang]) {
-      for (const issue of rule.check(ctx) || []) issues.push({ rule: rule.id, line, ...issue });
+    for (const rule of active) {
+      for (const issue of rule.check(ctx) || []) {
+        issues.push({ rule: rule.id, line, ...issue, ...(severity[rule.id] && { severity: severity[rule.id] }) });
+      }
     }
   });
   return issues.sort((a, b) => a.line - b.line || a.start - b.start);
+}
+
+/** Every rule id, with the languages it covers, for settings and docs. */
+function ruleList() {
+  const seen = new Map();
+  for (const [lang, list] of Object.entries(rules)) {
+    for (const r of list) seen.set(r.id, [...(seen.get(r.id) || []), lang]);
+  }
+  return [...seen].map(([id, languages]) => ({ id, languages }));
 }
 
 /** Every issue offers exactly two fixes; this keeps rule authors honest. */
@@ -73,4 +103,4 @@ function checkFixes(issue) {
   return Array.isArray(issue.fixes) && issue.fixes.length === 2 && issue.fixes.every((f) => f.title && f.edits.length);
 }
 
-module.exports = { analyze, register, mask, checkFixes, LANGUAGES, rules };
+module.exports = { analyze, register, mask, checkFixes, normalizeOptions, ruleList, LANGUAGES, LEVELS, rules };
