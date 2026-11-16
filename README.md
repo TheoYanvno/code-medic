@@ -2,7 +2,7 @@
 
 A VS Code extension that finds common mistakes in JavaScript, TypeScript and Python as you type, explains each one in plain words, and offers **two** ways to fix it from the Quick Fix menu (the light bulb, or Ctrl+.).
 
-**Status:** in progress. Rules for JavaScript, TypeScript and Python, two Quick Fixes per issue and hover explanations and settings are in; TypeScript-only rules are next.
+**Status:** in progress. Rules for JavaScript, TypeScript and Python, two Quick Fixes per issue, hover explanations and settings are in; a "fix all" command is next.
 
 ## How it works
 
@@ -20,6 +20,8 @@ A VS Code extension that finds common mistakes in JavaScript, TypeScript and Pyt
 | `no-var` | JS/TS | Change to `const` | Change to `let` |
 | `no-console-log` | JS/TS | Remove the line | Comment it out |
 | `no-debugger` | JS/TS | Remove the line | Comment it out |
+| `no-explicit-any` | TS | Change to `unknown` | Mark as intended |
+| `non-null-assertion` | TS | Use `?.` instead of `!` | Mark as intended |
 | `bare-except` | Python | `except Exception:` | `except Exception as error:` |
 | `mutable-default` | Python | Default to `None`, create inside | Use `()` (lists) or mark as intended |
 | `none-comparison` | Python | `is None` / `is not None` | Mark as intended |
@@ -45,7 +47,6 @@ To try the extension, open this folder in VS Code and press F5 (Run Extension).
 
 ## Planned
 
-- TypeScript rules (`any`, non-null `!`)
 - A "fix all" command, more rules and a packaged `.vsix`
 
 ## Credits

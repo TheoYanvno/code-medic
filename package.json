@@ -56,7 +56,9 @@
               "bare-except",
               "mutable-default",
               "none-comparison",
-              "leftover-print"
+              "leftover-print",
+              "no-explicit-any",
+              "non-null-assertion"
             ]
           },
           "description": "Rules to turn off, for example [\"no-var\"]."
