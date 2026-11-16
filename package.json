@@ -62,7 +62,9 @@
               "none-comparison",
               "leftover-print",
               "no-explicit-any",
-              "non-null-assertion"
+              "non-null-assertion",
+              "parse-int-radix",
+              "bool-comparison"
             ]
           },
           "description": "Rules to turn off, for example [\"no-var\"]."

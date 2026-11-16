@@ -12,6 +12,8 @@ A VS Code extension that finds common mistakes in JavaScript, TypeScript and Pyt
 - Each issue offers **two Quick Fixes** in the light-bulb menu (Ctrl+.), the safer one first, and hovering over it explains what's wrong and why it matters.
 - **Fix all safe issues** (Command Palette or right-click) applies the first fix for every issue where it can't change what working code does: `==`, `None` comparisons, bare `except`, `debugger` and `!`. Issues that need your choice (`const` or `let`?) are left for the light bulb. One Ctrl+Z undoes it.
 - The status bar shows how many issues the current file has; click it to open the Problems panel.
+- A `console.log` or `debugger` that shares a line with other code is removed on its own, so `if (x) { debugger; }` keeps its `if`.
+- Strings and comments that span lines (template literals, block comments, Python docstrings) are masked too.
 - Add `code-medic-ignore` in a comment at the end of a line to skip it.
 
 ## Rules so far
@@ -20,14 +22,16 @@ A VS Code extension that finds common mistakes in JavaScript, TypeScript and Pyt
 | --- | --- | --- | --- |
 | `loose-equality` | JS/TS | Change `==` to `===` | Mark as intended |
 | `no-var` | JS/TS | Change to `const` | Change to `let` |
-| `no-console-log` | JS/TS | Remove the line | Comment it out |
-| `no-debugger` | JS/TS | Remove the line | Comment it out |
+| `no-console-log` | JS/TS | Remove it | Comment it out |
+| `no-debugger` | JS/TS | Remove it | Comment it out |
+| `parse-int-radix` | JS/TS | Add the radix `10` | Use `Number()` |
 | `no-explicit-any` | TS | Change to `unknown` | Mark as intended |
 | `non-null-assertion` | TS | Use `?.` instead of `!` | Mark as intended |
 | `bare-except` | Python | `except Exception:` | `except Exception as error:` |
 | `mutable-default` | Python | Default to `None`, create inside | Use `()` (lists) or mark as intended |
 | `none-comparison` | Python | `is None` / `is not None` | Mark as intended |
 | `leftover-print` | Python | Remove the line | Change to `logging.debug()` (adds the import) |
+| `bool-comparison` | Python | `is True` / `is False` | Mark as intended |
 
 ## Settings
 

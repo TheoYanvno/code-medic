@@ -34,4 +34,38 @@ function* matches(code, regex) {
   }
 }
 
-module.exports = { replace, removeLine, commentOut, ignore, matches };
+/** Index of the ) that closes the ( at `open` in a masked line, or -1 if it closes on a later line. */
+function closeParen(code, open) {
+  let depth = 0;
+  for (let i = open; i < code.length; i++) {
+    if (code[i] === '(') depth++;
+    else if (code[i] === ')' && --depth === 0) return i;
+  }
+  return -1;
+}
+
+/** True if the masked line has nothing but whitespace (and a `;`) outside start..end. */
+function aloneOnLine(ctx, start, end) {
+  return /^\s*$/.test(ctx.code.slice(0, start)) && /^\s*;?\s*$/.test(ctx.code.slice(end));
+}
+
+/**
+ * Removes one statement. If it's alone on its line the whole line goes; if it shares the line with
+ * other code (`if (x) { debugger; }`), only the statement, its `;` and one space after it go.
+ */
+function removeStatement(ctx, start, end) {
+  if (aloneOnLine(ctx, start, end)) return removeLine(ctx);
+  let stop = end;
+  if (ctx.code[stop] === ';') stop++;
+  if (ctx.code[stop] === ' ') stop++;
+  return { line: ctx.line, start, end: stop, text: '' };
+}
+
+/** Comments out one statement: the whole line if it's alone, otherwise wraps it in a block comment. */
+function commentOutStatement(ctx, start, end) {
+  if (aloneOnLine(ctx, start, end)) return [commentOut(ctx)];
+  const stop = ctx.code[end] === ';' ? end + 1 : end;
+  return [{ line: ctx.line, start: stop, end: stop, text: ' */' }, { line: ctx.line, start, end: start, text: '/* ' }];
+}
+
+module.exports = { replace, removeLine, commentOut, ignore, matches, closeParen, aloneOnLine, removeStatement, commentOutStatement };

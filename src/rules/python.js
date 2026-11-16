@@ -1,7 +1,7 @@
 'use strict';
 // Python rules. Each issue explains the problem and offers two fixes.
 const { register } = require('../engine');
-const { replace, removeLine, ignore, matches } = require('./helpers');
+const { replace, removeLine, ignore, matches, closeParen } = require('./helpers');
 
 register({
   id: 'bare-except',
@@ -86,6 +86,8 @@ register({
     const m = /^(\s*)print\(/.exec(ctx.code);
     if (!m) return [];
     const start = m[1].length;
+    // A print() that continues onto later lines can't be removed as one line.
+    if (closeParen(ctx.code, ctx.code.indexOf('(', start)) === -1) return [];
     const hasLogging = ctx.lines.some((l) => /^\s*import logging\b/.test(l));
     const edits = [replace(ctx.line, start, start + 'print'.length, 'logging.debug')];
     if (!hasLogging) edits.unshift({ line: 0, start: 0, end: 0, text: 'import logging\n' });
@@ -99,5 +101,27 @@ register({
         { title: 'Change to logging.debug()', edits },
       ],
     }];
+  },
+});
+
+register({
+  id: 'bool-comparison',
+  languages: ['py'],
+  check(ctx) {
+    const out = [];
+    for (const m of matches(ctx.code, /(==|!=)\s*(True|False)\b/)) {
+      const better = `${m[1] === '==' ? 'is' : 'is not'} ${m[2]}`;
+      out.push({
+        start: m.index, end: m.index + m[0].length, severity: 'info',
+        message: `Comparing to ${m[2]} with ${m[1]}`,
+        why: `Python style (PEP 8) says not to compare with ${m[2]} using ${m[1]}, because 1 == True is also true. ` +
+          `Usually "if x:" or "if not x:" reads best; "${better}" checks for the exact value.`,
+        fixes: [
+          { title: `Change to ${better}`, edits: [replace(ctx.line, m.index, m.index + m[0].length, better)] },
+          { title: 'Keep it and mark this line as intended', edits: [ignore(ctx)] },
+        ],
+      });
+    }
+    return out;
   },
 });

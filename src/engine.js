@@ -20,26 +20,46 @@ function register(rule) {
   for (const lang of rule.languages) rules[lang].push(rule);
 }
 
-/** Blanks out string and comment contents in one line, keeping the quote marks and the length. */
-function mask(line, lang, state = { inBlock: false }) {
+/**
+ * Blanks out string and comment contents in one line, keeping the quote marks and the length.
+ * `state` carries over between lines, for comments and strings that span several lines:
+ * JS block comments and template literals, and Python triple-quoted strings (docstrings).
+ */
+function mask(line, lang, state = { inBlock: false, inString: null }) {
   const out = line.split('');
   let i = 0;
   const blank = (from, to) => { for (let k = from; k < to; k++) out[k] = ' '; };
+  // Index of the closing delimiter at or after `from`, skipping backslash escapes; -1 if not on this line.
+  const closing = (delim, from) => {
+    for (let j = from; j < line.length; j++) {
+      if (line[j] === '\\') { j++; continue; }
+      if (line.startsWith(delim, j)) return j;
+    }
+    return -1;
+  };
   while (i < line.length) {
     if (state.inBlock) {                                   // inside /* ... */ from an earlier line
       const close = line.indexOf('*/', i);
       if (close === -1) { blank(i, line.length); return out.join(''); }
       blank(i, close); state.inBlock = false; i = close + 2; continue;
     }
+    if (state.inString) {                                  // inside a `template` or a docstring
+      const close = closing(state.inString, i);
+      if (close === -1) { blank(i, line.length); return out.join(''); }
+      blank(i, close); i = close + state.inString.length; state.inString = null; continue;
+    }
     const c = line[i];
     const two = line.slice(i, i + 2);
+    const three = line.slice(i, i + 3);
     if (lang === 'py' && c === '#') { blank(i, line.length); break; }
     if (lang !== 'py' && two === '//') { blank(i, line.length); break; }
     if (lang !== 'py' && two === '/*') { state.inBlock = true; i += 2; continue; }
-    if (c === '"' || c === "'" || (c === '`' && lang !== 'py')) {
-      let j = i + 1;
-      while (j < line.length && line[j] !== c) j += line[j] === '\\' ? 2 : 1;
-      blank(i + 1, Math.min(j, line.length));
+    if (lang === 'py' && (three === '"""' || three === "'''")) { state.inString = three; i += 3; continue; }
+    if (lang !== 'py' && c === '`') { state.inString = '`'; i += 1; continue; }
+    if (c === '"' || c === "'") {
+      let j = closing(c, i + 1);
+      if (j === -1) j = line.length;
+      blank(i + 1, j);
       i = j + 1;
       continue;
     }
@@ -74,7 +94,7 @@ function analyze(text, languageId, options) {
   const { off, severity } = normalizeOptions(options);
   const active = rules[lang].filter((r) => !off.has(r.id));
   const lines = text.split(/\r?\n/);
-  const state = { inBlock: false };
+  const state = { inBlock: false, inString: null };
   const masked = lines.map((l) => mask(l, lang, state));
   const issues = [];
   lines.forEach((raw, line) => {

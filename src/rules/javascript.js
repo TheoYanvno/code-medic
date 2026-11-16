@@ -1,7 +1,7 @@
 'use strict';
 // JavaScript and TypeScript rules. Each issue explains the problem and offers two fixes.
 const { register } = require('../engine');
-const { replace, removeLine, commentOut, ignore, matches } = require('./helpers');
+const { replace, ignore, matches, closeParen, removeStatement, commentOutStatement } = require('./helpers');
 
 const JS = ['js', 'ts'];
 
@@ -49,7 +49,7 @@ register({
   },
 });
 
-/** Leftover debugging lines: console.log(...) and debugger. */
+/** Leftover debugging statements: console.log(...) and debugger. */
 function leftover(id, regex, label, why) {
   register({
     id,
@@ -57,12 +57,20 @@ function leftover(id, regex, label, why) {
     check(ctx) {
       const m = regex.exec(ctx.code);
       if (!m) return [];
+      // The whole statement: through the matching ) for console.log(...), or just the keyword.
+      let end = m.index + m[0].length;
+      const open = ctx.code.indexOf('(', end);
+      if (m[0].startsWith('console') && open !== -1 && /^\s*$/.test(ctx.code.slice(end, open))) {
+        const close = closeParen(ctx.code, open);
+        if (close === -1) return [];                        // spans lines: leave it to the person
+        end = close + 1;
+      }
       return [{
         start: m.index, end: m.index + m[0].length, severity: 'info',
         message: `Leftover ${label}`, why,
         fixes: [
-          { title: 'Remove this line', edits: [removeLine(ctx)] },
-          { title: 'Comment it out', edits: [commentOut(ctx)] },
+          { title: 'Remove it', edits: [removeStatement(ctx, m.index, end)] },
+          { title: 'Comment it out', edits: commentOutStatement(ctx, m.index, end) },
         ],
       }];
     },
@@ -73,3 +81,37 @@ leftover('no-console-log', /\bconsole\.(log|debug)\b/, 'console.log',
   'Debug logging left in finished code clutters the console and can print data users should not see.');
 leftover('no-debugger', /\bdebugger\b/, 'debugger statement',
   'debugger pauses the program whenever developer tools are open. It should never ship.');
+
+register({
+  id: 'parse-int-radix',
+  languages: JS,
+  check(ctx) {
+    const out = [];
+    for (const m of matches(ctx.code, /\bparseInt\s*\(/)) {
+      const open = m.index + m[0].length - 1;
+      const close = closeParen(ctx.code, open);
+      if (close === -1) continue;
+      // Only flag a single argument: look for a comma at the top level inside the parentheses.
+      let depth = 0;
+      let comma = false;
+      for (let i = open + 1; i < close; i++) {
+        const c = ctx.code[i];
+        if ('([{'.includes(c)) depth++;
+        else if (')]}'.includes(c)) depth--;
+        else if (c === ',' && depth === 0) comma = true;
+      }
+      if (comma || !ctx.code.slice(open + 1, close).trim()) continue;
+      out.push({
+        start: m.index, end: m.index + 'parseInt'.length, severity: 'warning',
+        message: 'parseInt without a radix',
+        why: 'Without the second argument, parseInt guesses the number base from the text: "0x1F" is read ' +
+          'as hexadecimal. Passing 10 makes it always read decimal numbers.',
+        fixes: [
+          { title: 'Add the radix 10', edits: [replace(ctx.line, close, close, ', 10')] },
+          { title: 'Use Number() instead (stricter: "12px" becomes NaN)', edits: [replace(ctx.line, m.index, m.index + 'parseInt'.length, 'Number')] },
+        ],
+      });
+    }
+    return out;
+  },
+});
