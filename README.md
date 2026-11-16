@@ -2,7 +2,7 @@
 
 A VS Code extension that finds common mistakes in JavaScript, TypeScript and Python as you type, explains each one in plain words, and offers **two** ways to fix it from the Quick Fix menu (the light bulb, or Ctrl+.).
 
-**Status:** in progress. Rules for JavaScript, TypeScript and Python, two Quick Fixes per issue, hover explanations and settings are in; a "fix all" command is next.
+**Status:** in progress. Rules for JavaScript, TypeScript and Python, two Quick Fixes per issue, hover explanations and settings are in; "fix all" and a status bar count are in; more rules and packaging are next.
 
 ## How it works
 
@@ -10,6 +10,8 @@ A VS Code extension that finds common mistakes in JavaScript, TypeScript and Pyt
 - Before any rule runs, each line is **masked**: the inside of strings and comments is replaced with spaces, keeping every column in place. A rule can then search for `==` or `print(` without ever matching text in a string or a comment.
 - `src/extension.js` runs the engine when a file opens and again 300 ms after you stop typing, and shows the results as diagnostics (squiggles and the Problems panel).
 - Each issue offers **two Quick Fixes** in the light-bulb menu (Ctrl+.), the safer one first, and hovering over it explains what's wrong and why it matters.
+- **Fix all safe issues** (Command Palette or right-click) applies the first fix for every issue where it can't change what working code does: `==`, `None` comparisons, bare `except`, `debugger` and `!`. Issues that need your choice (`const` or `let`?) are left for the light bulb. One Ctrl+Z undoes it.
+- The status bar shows how many issues the current file has; click it to open the Problems panel.
 - Add `code-medic-ignore` in a comment at the end of a line to skip it.
 
 ## Rules so far
@@ -47,7 +49,7 @@ To try the extension, open this folder in VS Code and press F5 (Run Extension).
 
 ## Planned
 
-- A "fix all" command, more rules and a packaged `.vsix`
+- More rules and a packaged `.vsix`
 
 ## Credits
 

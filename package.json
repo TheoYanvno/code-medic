@@ -33,6 +33,10 @@
       {
         "command": "codeMedic.checkFile",
         "title": "Code Medic: Check this file"
+      },
+      {
+        "command": "codeMedic.fixAll",
+        "title": "Code Medic: Fix all safe issues in this file"
       }
     ],
     "configuration": {
@@ -78,6 +82,15 @@
           "description": "Change how a rule shows up, for example { \"loose-equality\": \"error\" }. \"off\" turns it off."
         }
       }
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "codeMedic.fixAll",
+          "group": "1_modification",
+          "when": "editorLangId =~ /^(javascript|javascriptreact|typescript|typescriptreact|python)$/"
+        }
+      ]
     }
   },
   "scripts": {
