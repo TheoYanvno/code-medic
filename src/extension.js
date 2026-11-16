@@ -1,7 +1,9 @@
 'use strict';
-// VS Code glue: runs the engine on open and edited documents and shows the issues as diagnostics.
+// VS Code glue: runs the engine on open and edited documents, shows the issues as diagnostics,
+// offers two Quick Fixes for each one, and explains it on hover.
 const vscode = require('vscode');
 const { analyze, LANGUAGES } = require('./engine');
+const { quickFixes, explain, findIssue } = require('./fixes');
 require('./rules');                       // loads every rule set
 
 const SEVERITY = {
@@ -9,6 +11,7 @@ const SEVERITY = {
   warning: vscode.DiagnosticSeverity.Warning,
   info: vscode.DiagnosticSeverity.Information,
 };
+const SELECTOR = Object.keys(LANGUAGES).map((language) => ({ language }));
 
 function toDiagnostic(issue) {
   const range = new vscode.Range(issue.line, issue.start, issue.line, issue.end);
@@ -20,11 +23,14 @@ function toDiagnostic(issue) {
 
 function activate(context) {
   const collection = vscode.languages.createDiagnosticCollection('code-medic');
+  const issuesByDoc = new Map();          // uri -> latest issues, so fixes and hovers can find them
   const timers = new Map();
 
   const check = (doc) => {
     if (!LANGUAGES[doc.languageId]) return;
-    collection.set(doc.uri, analyze(doc.getText(), doc.languageId).map(toDiagnostic));
+    const issues = analyze(doc.getText(), doc.languageId);
+    issuesByDoc.set(doc.uri.toString(), issues);
+    collection.set(doc.uri, issues.map(toDiagnostic));
   };
   // Wait until typing pauses for 300 ms before checking, so big files stay responsive.
   const checkSoon = (doc) => {
@@ -32,11 +38,50 @@ function activate(context) {
     timers.set(doc.uri.toString(), setTimeout(() => check(doc), 300));
   };
 
+  const fixProvider = {
+    provideCodeActions(doc, _range, ctx) {
+      const issues = issuesByDoc.get(doc.uri.toString()) || [];
+      const actions = [];
+      for (const diag of ctx.diagnostics) {
+        if (diag.source !== 'Code Medic') continue;
+        const issue = findIssue(issues, diag.code, diag.range.start.line, diag.range.start.character);
+        if (!issue) continue;
+        for (const fix of quickFixes(issue)) {
+          const action = new vscode.CodeAction(fix.title, vscode.CodeActionKind.QuickFix);
+          action.edit = new vscode.WorkspaceEdit();
+          for (const e of fix.edits) {
+            const range = new vscode.Range(e.start.line, e.start.character, e.end.line, e.end.character);
+            action.edit.replace(doc.uri, range, e.text);
+          }
+          action.diagnostics = [diag];
+          action.isPreferred = fix.preferred;
+          actions.push(action);
+        }
+      }
+      return actions;
+    },
+  };
+
+  const hoverProvider = {
+    provideHover(doc, pos) {
+      const issues = issuesByDoc.get(doc.uri.toString()) || [];
+      const hit = issues.find((i) => i.line === pos.line && pos.character >= i.start && pos.character <= i.end);
+      return hit ? new vscode.Hover(new vscode.MarkdownString(explain(hit))) : undefined;
+    },
+  };
+
   context.subscriptions.push(
     collection,
+    vscode.languages.registerCodeActionsProvider(SELECTOR, fixProvider, {
+      providedCodeActionKinds: [vscode.CodeActionKind.QuickFix],
+    }),
+    vscode.languages.registerHoverProvider(SELECTOR, hoverProvider),
     vscode.workspace.onDidOpenTextDocument(check),
     vscode.workspace.onDidChangeTextDocument((e) => checkSoon(e.document)),
-    vscode.workspace.onDidCloseTextDocument((doc) => collection.delete(doc.uri)),
+    vscode.workspace.onDidCloseTextDocument((doc) => {
+      collection.delete(doc.uri);
+      issuesByDoc.delete(doc.uri.toString());
+    }),
     vscode.commands.registerCommand('codeMedic.checkFile', () => {
       const editor = vscode.window.activeTextEditor;
       if (editor) check(editor.document);
