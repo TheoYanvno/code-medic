@@ -2,7 +2,7 @@
 
 A VS Code extension that finds common mistakes in JavaScript, TypeScript and Python as you type, explains each one in plain words, and offers **two** ways to fix it from the Quick Fix menu (the light bulb, or Ctrl+.).
 
-**Status:** in progress. Rules for JavaScript, TypeScript and Python, two Quick Fixes per issue, hover explanations and settings are in; "fix all" and a status bar count are in; more rules and packaging are next.
+**Status:** working. 12 rules across JavaScript, TypeScript and Python, two Quick Fixes per issue, hover explanations, settings, Fix All and a status bar count. See the [changelog](CHANGELOG.md).
 
 ## How it works
 
@@ -49,11 +49,21 @@ Changes apply right away to every open file.
 npm test                     # engine tests, no VS Code needed
 ```
 
-To try the extension, open this folder in VS Code and press F5 (Run Extension).
+To try the extension, open this folder in VS Code and press F5 (Run Extension). In the window that opens, open the files in `examples/`: each one has a mistake on almost every line.
+
+## Package it
+
+```bash
+npm run package              # uses @vscode/vsce to build code-medic-0.2.0.vsix
+code --install-extension code-medic-0.2.0.vsix
+```
+
+`.vscodeignore` keeps the tests and examples out of the package, so only `src/`, the README, the changelog and the license ship.
 
 ## Planned
 
-- More rules and a packaged `.vsix`
+- More rules (unused variables, comparing strings with `is` in Python, unreachable code after `return`)
+- An icon and a release on the VS Code Marketplace
 
 ## Credits
 

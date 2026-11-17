@@ -2,7 +2,7 @@
   "name": "code-medic",
   "displayName": "Code Medic",
   "description": "Finds common mistakes in JavaScript, TypeScript and Python as you type, explains each one in plain words, and offers two ways to fix it.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "theoyanvno",
   "license": "MIT",
   "engines": {
@@ -96,6 +96,12 @@
     }
   },
   "scripts": {
-    "test": "node --test test/*.test.js"
-  }
+    "test": "node --test test/*.test.js",
+    "package": "npx @vscode/vsce package"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TheoYanvno/code-medic"
+  },
+  "author": "Anthony Evo"
 }
